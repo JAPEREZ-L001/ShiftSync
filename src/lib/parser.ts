@@ -98,7 +98,6 @@ export function buildMonthEntriesForTarget(parsed: ParsedWorkbook, targetName: s
 
     const target = pool.find(e => namesMatch(e.name, targetName))
     if (!target) {
-      skipped.push({ sheetName: sheet.sheetName, reason: `No se encontró a ${targetName} en esta hoja.` })
       continue
     }
 
@@ -118,6 +117,10 @@ export function buildMonthEntriesForTarget(parsed: ParsedWorkbook, targetName: s
       targetDays: target.days,
       coworkerDaysByName
     })
+  }
+
+  if (monthEntries.length === 0) {
+    skipped.push({ sheetName: 'Todas las hojas', reason: `No se encontró a ${targetName} en ninguna hoja del archivo.` })
   }
 
   return { monthEntries, skipped }
