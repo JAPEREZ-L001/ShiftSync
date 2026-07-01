@@ -93,16 +93,14 @@ export function buildMonthEntriesForTarget(parsed: ParsedWorkbook, targetName: s
   const skipped: SkippedSheet[] = [...parsed.skipped]
 
   for (const sheet of parsed.sheets) {
-    const n1Employees = sheet.employees.filter(e => normalize(e.department).includes('N1'))
-    const pool = n1Employees.length ? n1Employees : sheet.employees
+    const target = sheet.employees.find(e => namesMatch(e.name, targetName))
 
-    const target = pool.find(e => namesMatch(e.name, targetName))
     if (!target) {
       continue
     }
 
     const coworkerDaysByName: Record<string, Day[]> = {}
-    for (const emp of pool) {
+    for (const emp of sheet.employees) {
       if (!namesMatch(emp.name, targetName) && emp.department === target.department) {
         coworkerDaysByName[emp.name] = emp.days
       }
