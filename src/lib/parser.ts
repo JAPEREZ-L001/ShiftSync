@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
-import type { ShiftInfo, Day, MonthEntry, SkippedSheet, ParseResult } from '../types'
-import { REST_VALUE, TARGET_EMPLOYEE, WATCHED_COWORKERS, SHIFT_PATTERN } from './constants'
+import type { ShiftInfo, Day, MonthEntry, SkippedSheet, ParsedWorkbook, ParsedSheet, Employee } from '../types'
+import { REST_VALUE, SHIFT_PATTERN } from './constants'
 import { normalize, namesMatch, excelDateToLocalMidnight, withTime } from './utils'
 
 export function parseShiftValue(rawInput: unknown): ShiftInfo {
@@ -23,15 +23,10 @@ export function parseShiftValue(rawInput: unknown): ShiftInfo {
   return { type: 'desconocido', raw }
 }
 
-interface Employee {
-  department: string
-  name: string
-  days: Day[]
-}
-
-export function parseWorkbook(workbook: XLSX.WorkBook): ParseResult {
-  const monthEntries: MonthEntry[] = []
+export function parseWorkbookAll(workbook: XLSX.WorkBook): ParsedWorkbook {
+  const sheets: ParsedSheet[] = []
   const skipped: SkippedSheet[] = []
+  const allNamesSet = new Set<string>()
 
   for (const sheetName of workbook.SheetNames) {
     try {
@@ -68,39 +63,62 @@ export function parseWorkbook(workbook: XLSX.WorkBook): ParseResult {
             days.push(day)
           }
           days.sort((a, b) => a.date.getTime() - b.date.getTime())
+          allNamesSet.add(name)
           return { department, name, days }
         })
 
-      const n1Employees = employees.filter(e => normalize(e.department).includes('N1'))
-      const pool = n1Employees.length ? n1Employees : employees
-
-      const target = pool.find(e => namesMatch(e.name, TARGET_EMPLOYEE))
-      if (!target) {
-        skipped.push({ sheetName, reason: `No se encontró a ${TARGET_EMPLOYEE} en esta hoja.` })
-        continue
-      }
-
-      const coworkerDaysByName: Record<string, Day[]> = {}
-      for (const cw of WATCHED_COWORKERS) {
-        const emp = pool.find(e => namesMatch(e.name, cw))
-        if (emp) coworkerDaysByName[emp.name] = emp.days
-      }
-
-      const firstDate = target.days[0] ? target.days[0].date : null
-      monthEntries.push({
+      const firstDate = employees[0]?.days[0]?.date ?? null
+      sheets.push({
         sheetName,
-        department: target.department,
-        employeeName: target.name,
         year: firstDate ? firstDate.getFullYear() : null,
         monthIndex: firstDate ? firstDate.getMonth() : null,
-        targetDays: target.days,
-        coworkerDaysByName
+        employees
       })
     } catch (err) {
       skipped.push({ sheetName, reason: 'Error al leer la hoja: ' + (err instanceof Error ? err.message : String(err)) })
     }
   }
 
-  monthEntries.sort((a, b) => ((a.year ?? 0) - (b.year ?? 0)) || ((a.monthIndex ?? 0) - (b.monthIndex ?? 0)))
+  sheets.sort((a, b) => ((a.year ?? 0) - (b.year ?? 0)) || ((a.monthIndex ?? 0) - (b.monthIndex ?? 0)))
+  
+  return {
+    sheets,
+    allNames: Array.from(allNamesSet).sort((a, b) => a.localeCompare(b)),
+    skipped
+  }
+}
+
+export function buildMonthEntriesForTarget(parsed: ParsedWorkbook, targetName: string): { monthEntries: MonthEntry[], skipped: SkippedSheet[] } {
+  const monthEntries: MonthEntry[] = []
+  const skipped: SkippedSheet[] = [...parsed.skipped]
+
+  for (const sheet of parsed.sheets) {
+    const n1Employees = sheet.employees.filter(e => normalize(e.department).includes('N1'))
+    const pool = n1Employees.length ? n1Employees : sheet.employees
+
+    const target = pool.find(e => namesMatch(e.name, targetName))
+    if (!target) {
+      skipped.push({ sheetName: sheet.sheetName, reason: `No se encontró a ${targetName} en esta hoja.` })
+      continue
+    }
+
+    const coworkerDaysByName: Record<string, Day[]> = {}
+    for (const emp of pool) {
+      if (!namesMatch(emp.name, targetName) && emp.department === target.department) {
+        coworkerDaysByName[emp.name] = emp.days
+      }
+    }
+
+    monthEntries.push({
+      sheetName: sheet.sheetName,
+      department: target.department,
+      employeeName: target.name,
+      year: sheet.year,
+      monthIndex: sheet.monthIndex,
+      targetDays: target.days,
+      coworkerDaysByName
+    })
+  }
+
   return { monthEntries, skipped }
 }

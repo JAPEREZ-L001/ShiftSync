@@ -8,6 +8,7 @@ import { NextShiftCard } from './NextShiftCard'
 import { NextRestCard } from './NextRestCard'
 import { CoworkersCard } from './CoworkersCard'
 import { StatsSection } from './StatsSection'
+import { StatsCharts } from './StatsCharts'
 
 interface DashboardProps {
   monthEntries: MonthEntry[]
@@ -55,6 +56,7 @@ export function Dashboard({
             selectedDateKey={selectedDateKey}
             onDateSelect={onDateSelect}
           />
+          <StatsCharts stats={stats} targetDays={activeMonth.targetDays} />
         </div>
 
         <div className="space-y-6">

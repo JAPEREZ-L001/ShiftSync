@@ -35,6 +35,25 @@ export interface ParseResult {
   skipped: SkippedSheet[]
 }
 
+export interface Employee {
+  department: string
+  name: string
+  days: Day[]
+}
+
+export interface ParsedSheet {
+  sheetName: string
+  year: number | null
+  monthIndex: number | null
+  employees: Employee[]
+}
+
+export interface ParsedWorkbook {
+  sheets: ParsedSheet[]
+  allNames: string[]
+  skipped: SkippedSheet[]
+}
+
 export interface MonthStats {
   totalWorkedHours: number
   shiftsCount: number

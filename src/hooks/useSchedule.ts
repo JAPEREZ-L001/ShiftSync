@@ -1,25 +1,39 @@
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import * as XLSX from 'xlsx'
-import type { MonthEntry, SkippedSheet, Day, MonthStats } from '../types'
-import { parseWorkbook } from '../lib/parser'
+import type { MonthEntry, SkippedSheet, Day, MonthStats, ParsedWorkbook } from '../types'
+import { parseWorkbookAll, buildMonthEntriesForTarget } from '../lib/parser'
 import { computeMonthStats, getAllTargetDaysSorted, findNextShift, findNextRest } from '../lib/stats'
 import { toTitleCase, toKey } from '../lib/utils'
+import { TARGET_EMPLOYEE } from '../lib/constants'
+import { getSchedule, rebuildMonthEntries } from '../lib/share'
+
+type AppMode = 'edit' | 'view'
 
 interface ScheduleState {
+  parsed: ParsedWorkbook | null
+  targetName: string
   monthEntries: MonthEntry[]
   skipped: SkippedSheet[]
   activeMonthIndex: number
   selectedDateKey: string | null
   error: string | null
+  mode: AppMode
+  shareId: string | null
+  loading: boolean
 }
 
 export function useSchedule() {
   const [state, setState] = useState<ScheduleState>({
+    parsed: null,
+    targetName: '',
     monthEntries: [],
     skipped: [],
     activeMonthIndex: 0,
     selectedDateKey: null,
-    error: null
+    error: null,
+    mode: 'edit',
+    shareId: null,
+    loading: true
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -46,6 +60,7 @@ export function useSchedule() {
   }, [allDays])
 
   const hasData = state.monthEntries.length > 0
+  const availableNames = state.parsed?.allNames ?? []
 
   const headerSubtitle = useMemo(() => {
     if (!activeMonth) return 'Cargá tu archivo Excel para comenzar'
@@ -67,6 +82,47 @@ export function useSchedule() {
     return month && month.targetDays.length ? toKey(month.targetDays[0].date) : null
   }, [])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const shareId = params.get('s')
+    
+    if (shareId) {
+      getSchedule(shareId).then(result => {
+        if (result) {
+          const monthEntries = rebuildMonthEntries(result.payload)
+          const activeMonthIndex = pickDefaultMonthIndex(monthEntries)
+          const selectedDateKey = pickDefaultSelectedDate(monthEntries, activeMonthIndex)
+          setState({
+            parsed: null,
+            targetName: result.target_name,
+            monthEntries,
+            skipped: [],
+            activeMonthIndex,
+            selectedDateKey,
+            error: null,
+            mode: 'view',
+            shareId,
+            loading: false
+          })
+        } else {
+          setState(prev => ({
+            ...prev,
+            error: 'No se encontró el horario compartido. El enlace puede ser inválido o haber expirado.',
+            loading: false
+          }))
+        }
+      }).catch(() => {
+        setState(prev => ({
+          ...prev,
+          error: 'Error al cargar el horario compartido.',
+          loading: false
+        }))
+      })
+    } else {
+      setState(prev => ({ ...prev, loading: false }))
+    }
+  }, [pickDefaultMonthIndex, pickDefaultSelectedDate])
+
   const handleFile = useCallback((file: File | null) => {
     if (!file) return
 
@@ -79,27 +135,38 @@ export function useSchedule() {
         if (!data) throw new Error('No se pudo leer el archivo')
         
         const workbook = XLSX.read(new Uint8Array(data as ArrayBuffer), { type: 'array', cellDates: true })
-        const { monthEntries, skipped } = parseWorkbook(workbook)
+        const parsed = parseWorkbookAll(workbook)
 
-        if (!monthEntries.length) {
+        if (!parsed.sheets.length) {
           setState(prev => ({
             ...prev,
-            error: 'No se encontró al empleado objetivo en ninguna hoja de este archivo.',
+            error: 'No se encontraron hojas válidas en este archivo.',
+            parsed: null,
             monthEntries: [],
-            skipped
+            skipped: parsed.skipped
           }))
           return
         }
 
+        const defaultTarget = parsed.allNames.find(n => n.toUpperCase().includes(TARGET_EMPLOYEE.toUpperCase())) 
+          || parsed.allNames[0] 
+          || ''
+
+        const { monthEntries, skipped } = buildMonthEntriesForTarget(parsed, defaultTarget)
         const activeMonthIndex = pickDefaultMonthIndex(monthEntries)
         const selectedDateKey = pickDefaultSelectedDate(monthEntries, activeMonthIndex)
 
         setState({
+          parsed,
+          targetName: defaultTarget,
           monthEntries,
           skipped,
           activeMonthIndex,
           selectedDateKey,
-          error: null
+          error: null,
+          mode: 'edit',
+          shareId: null,
+          loading: false
         })
       } catch (err) {
         setState(prev => ({
@@ -117,6 +184,23 @@ export function useSchedule() {
     reader.readAsArrayBuffer(file)
   }, [pickDefaultMonthIndex, pickDefaultSelectedDate])
 
+  const setTargetName = useCallback((name: string) => {
+    if (!state.parsed) return
+    
+    const { monthEntries, skipped } = buildMonthEntriesForTarget(state.parsed, name)
+    const activeMonthIndex = pickDefaultMonthIndex(monthEntries)
+    const selectedDateKey = pickDefaultSelectedDate(monthEntries, activeMonthIndex)
+    
+    setState(prev => ({
+      ...prev,
+      targetName: name,
+      monthEntries,
+      skipped,
+      activeMonthIndex,
+      selectedDateKey
+    }))
+  }, [state.parsed, pickDefaultMonthIndex, pickDefaultSelectedDate])
+
   const setActiveMonth = useCallback((index: number) => {
     setState(prev => {
       const selectedDateKey = pickDefaultSelectedDate(prev.monthEntries, index)
@@ -132,6 +216,10 @@ export function useSchedule() {
     fileInputRef.current?.click()
   }, [])
 
+  const setShareId = useCallback((id: string) => {
+    setState(prev => ({ ...prev, shareId: id }))
+  }, [])
+
   return {
     ...state,
     activeMonth,
@@ -139,11 +227,14 @@ export function useSchedule() {
     nextShift,
     nextRest,
     hasData,
+    availableNames,
     headerSubtitle,
     fileInputRef,
     handleFile,
+    setTargetName,
     setActiveMonth,
     setSelectedDate,
-    triggerFileInput
+    triggerFileInput,
+    setShareId
   }
 }
