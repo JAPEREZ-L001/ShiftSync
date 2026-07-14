@@ -8,16 +8,16 @@ interface StatsSectionProps {
 
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-slate-800/70 last:border-0">
-      <span className="text-sm text-slate-400">{label}</span>
-      <span className="text-sm font-mono text-slate-200">{value}</span>
+    <div className="flex items-center justify-between gap-3 py-1.5 border-b border-slate-800/70 last:border-0">
+      <span className="min-w-0 flex-1 text-sm text-slate-400 leading-snug">{label}</span>
+      <span className="shrink-0 whitespace-nowrap text-right text-sm font-mono text-slate-200">{value}</span>
     </div>
   )
 }
 
 export function StatsSection({ stats }: StatsSectionProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:p-5">
       <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Estadísticas</h2>
       <div className="mt-2">
         <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-1">Trabajo</h3>
