@@ -19,6 +19,13 @@ const COLORS = {
   desconocido: '#94a3b8'
 }
 
+const tooltipStyle = {
+  backgroundColor: '#1e293b',
+  border: '1px solid #334155',
+  borderRadius: '8px',
+  fontSize: '12px'
+}
+
 export function StatsCharts({ stats, targetDays }: StatsChartsProps) {
   const distributionData = useMemo(() => [
     { name: 'Trabajo', value: stats.shiftsCount, color: COLORS.trabajo },
@@ -30,7 +37,6 @@ export function StatsCharts({ stats, targetDays }: StatsChartsProps) {
   const weeklyHoursData = useMemo(() => {
     const weeks: { week: string; hours: number }[] = []
     let currentWeek = 1
-    let weekStart = 0
     let weekHours = 0
 
     targetDays.forEach((day, i) => {
@@ -40,7 +46,6 @@ export function StatsCharts({ stats, targetDays }: StatsChartsProps) {
         weeks.push({ week: `Sem ${currentWeek}`, hours: Math.round(weekHours * 10) / 10 })
         currentWeek++
         weekHours = 0
-        weekStart = i
       }
 
       if (day.type === 'trabajo' && day.durationHours) {
@@ -48,7 +53,7 @@ export function StatsCharts({ stats, targetDays }: StatsChartsProps) {
       }
     })
 
-    if (weekStart < targetDays.length) {
+    if (weekHours > 0 || weeks.length === 0) {
       weeks.push({ week: `Sem ${currentWeek}`, hours: Math.round(weekHours * 10) / 10 })
     }
 
@@ -57,39 +62,44 @@ export function StatsCharts({ stats, targetDays }: StatsChartsProps) {
 
   const sleepGapsData = useMemo(() => {
     return stats.sleepGaps.map((gap, i) => ({
-      name: `T${i + 1}→T${i + 2}`,
+      name: `T${i + 1}`,
+      fullLabel: `T${i + 1} → T${i + 2}`,
       hours: Math.round(gap * 10) / 10,
       fill: gap >= SLEEP_HOURS_TARGET ? '#34d399' : '#f87171'
     }))
   }, [stats.sleepGaps])
 
+  const sleepChartWidth = Math.max(sleepGapsData.length * 36, 280)
+
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:p-5">
       <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-4">Estadísticas visuales</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Distribución de días</h3>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
                 data={distributionData}
                 cx="50%"
-                cy="50%"
-                innerRadius={40}
+                cy="45%"
+                innerRadius={45}
                 outerRadius={70}
                 paddingAngle={2}
                 dataKey="value"
-                label={({ name, value }) => `${name}: ${value}`}
-                labelLine={false}
               >
                 {distributionData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+              <Tooltip
+                contentStyle={tooltipStyle}
                 labelStyle={{ color: '#e2e8f0' }}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: '11px' }}
+                formatter={(value) => <span style={{ color: '#94a3b8' }}>{value}</span>}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -97,17 +107,18 @@ export function StatsCharts({ stats, targetDays }: StatsChartsProps) {
 
         <div>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Horas por semana</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={weeklyHoursData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={weeklyHoursData} margin={{ top: 8, right: 8, left: -16, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+              <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={32} />
+              <Tooltip
+                contentStyle={tooltipStyle}
                 labelStyle={{ color: '#e2e8f0' }}
                 formatter={(value) => [`${value}h`, 'Horas']}
+                cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
               />
-              <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -117,35 +128,41 @@ export function StatsCharts({ stats, targetDays }: StatsChartsProps) {
             Horas entre turnos (meta: {SLEEP_HOURS_TARGET}h)
           </h3>
           {sleepGapsData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={sleepGapsData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={50} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
-                  labelStyle={{ color: '#e2e8f0' }}
-                  formatter={(value) => [`${value}h`, 'Disponible']}
-                />
-                <ReferenceLine y={SLEEP_HOURS_TARGET} stroke="#fbbf24" strokeDasharray="5 5" />
-                <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
-                  {sleepGapsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-                <Legend 
-                  wrapperStyle={{ fontSize: '11px' }}
-                  content={() => (
-                    <div className="flex justify-center items-center gap-2 text-xs text-amber-400">
-                      <span className="inline-block w-4 border-t-2 border-dashed border-amber-400"></span>
-                      <span>Meta: {SLEEP_HOURS_TARGET}h</span>
-                    </div>
-                  )}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <div className="overflow-x-auto scrollbar-thin -mx-1 px-1">
+                <div style={{ width: sleepChartWidth, height: 220 }}>
+                  <BarChart
+                    width={sleepChartWidth}
+                    height={220}
+                    data={sleepGapsData}
+                    margin={{ top: 8, right: 8, left: -12, bottom: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} />
+                    <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={28} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      labelStyle={{ color: '#e2e8f0' }}
+                      formatter={(value) => [`${value}h`, 'Disponible']}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.fullLabel ?? ''}
+                      cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                    />
+                    <ReferenceLine y={SLEEP_HOURS_TARGET} stroke="#fbbf24" strokeDasharray="5 5" />
+                    <Bar dataKey="hours" radius={[4, 4, 0, 0]} maxBarSize={24}>
+                      {sleepGapsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </div>
+              </div>
+              <div className="mt-2 flex justify-center items-center gap-2 text-xs text-amber-400">
+                <span className="inline-block w-4 border-t-2 border-dashed border-amber-400" />
+                <span>Meta: {SLEEP_HOURS_TARGET}h · deslizá para ver todos los turnos</span>
+              </div>
+            </>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-sm text-slate-500">
+            <div className="h-[220px] flex items-center justify-center text-sm text-slate-500">
               No hay suficientes turnos consecutivos para mostrar huecos de sueño.
             </div>
           )}
