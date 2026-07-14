@@ -42,7 +42,7 @@ function CalendarCell({
   isToday: boolean
   onClick?: () => void 
 }) {
-  if (!cell) return <div />
+  if (!cell) return <div className="min-w-0" />
   
   const meta = STATUS_META[cell.type]
   const ring = isSelected 
@@ -53,14 +53,14 @@ function CalendarCell({
     <button
       type="button"
       onClick={onClick}
-      className={`aspect-square w-full rounded-lg ${ring} ${meta.bg} p-1.5 sm:p-2 flex flex-col items-start text-left hover:ring-indigo-400/60 transition-colors`}
+      className={`aspect-square w-full min-w-0 overflow-hidden rounded-lg ${ring} ${meta.bg} p-1 sm:p-2 flex flex-col items-center justify-start text-center hover:ring-indigo-400/60 transition-colors`}
     >
-      <div className="flex items-center justify-between w-full">
-        <span className="text-xs sm:text-sm font-mono text-slate-200">{cell.date.getDate()}</span>
-        <span className="text-[10px] sm:text-xs">{meta.emoji}</span>
+      <div className="flex w-full min-w-0 items-center justify-between gap-0.5">
+        <span className="text-[11px] sm:text-sm font-mono text-slate-200 leading-none">{cell.date.getDate()}</span>
+        <span className="text-[10px] sm:text-xs leading-none shrink-0">{meta.emoji}</span>
       </div>
       {cell.type === 'trabajo' && (
-        <div className="mt-1 text-[10px] sm:text-xs font-mono text-slate-400 truncate">
+        <div className="mt-1 hidden w-full min-w-0 text-[9px] sm:text-[10px] md:text-xs font-mono text-slate-400 leading-tight truncate sm:block">
           {cell.raw}
         </div>
       )}
@@ -74,24 +74,25 @@ export function Calendar({ month, selectedDateKey, onDateSelect }: CalendarProps
   const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:p-5">
       <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Calendario mensual</h2>
-      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-1.5 min-w-0">
         {weekdays.map(w => (
-          <div key={w} className="text-center text-xs text-slate-500">{w}</div>
+          <div key={w} className="text-center text-[10px] sm:text-xs text-slate-500">{w}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 min-w-0">
         {cells.map((cell, i) => {
           const key = cell ? toKey(cell.date) : `blank-${i}`
           return (
-            <CalendarCell
-              key={key}
-              cell={cell}
-              isSelected={key === selectedDateKey}
-              isToday={key === todayKey}
-              onClick={cell ? () => onDateSelect(toKey(cell.date)) : undefined}
-            />
+            <div key={key} className="min-w-0">
+              <CalendarCell
+                cell={cell}
+                isSelected={key === selectedDateKey}
+                isToday={key === todayKey}
+                onClick={cell ? () => onDateSelect(toKey(cell.date)) : undefined}
+              />
+            </div>
           )
         })}
       </div>

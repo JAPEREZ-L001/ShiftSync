@@ -39,18 +39,18 @@ function AgendaCard({ day, isSelected, onClick }: { day: Day; isSelected: boolea
     <button
       type="button"
       onClick={onClick}
-      className={`min-w-[132px] shrink-0 rounded-xl border p-3 text-left transition-colors ${
+      className={`w-[9.75rem] shrink-0 rounded-xl border p-3 text-left transition-colors ${
         isSelected
           ? 'border-indigo-400 bg-indigo-500/10'
           : 'border-slate-800 bg-slate-900/60 hover:border-indigo-400/40'
       }`}
     >
-      <div className="text-xs uppercase tracking-wide text-slate-500">{wd}</div>
+      <div className="text-xs uppercase tracking-wide text-slate-500 truncate">{wd}</div>
       <div className="text-sm font-medium text-slate-200">
         {day.date.getDate()} {MONTH_NAMES_ES[day.date.getMonth()].slice(0, 3)}
       </div>
       {day.type === 'trabajo' ? (
-        <div className="font-mono text-sm text-slate-200 mt-1">{day.raw}</div>
+        <div className="font-mono text-xs sm:text-sm text-slate-200 mt-1 whitespace-nowrap">{day.raw}</div>
       ) : (
         <div className="text-sm text-slate-500 mt-1">—</div>
       )}
@@ -69,7 +69,7 @@ export function Agenda({ month, selectedDateKey, onDateSelect }: AgendaProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 sm:p-5">
       <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Agenda semanal</h2>
       <div className="space-y-4">
         {weeks.map((week, weekIdx) => {
@@ -80,7 +80,7 @@ export function Agenda({ month, selectedDateKey, onDateSelect }: AgendaProps) {
           return (
             <div key={weekIdx}>
               <div className="text-xs text-slate-500 mb-2">{label}</div>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                 {real.map(day => (
                   <AgendaCard
                     key={toKey(day.date)}
