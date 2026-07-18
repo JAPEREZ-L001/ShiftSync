@@ -1,4 +1,4 @@
-import type { MonthStats } from '../types'
+import type { Day, MonthStats } from '../types'
 import { fmtHours, formatDateShort } from '../lib/utils'
 
 interface StatsSectionProps {
@@ -7,11 +7,18 @@ interface StatsSectionProps {
 
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5 border-b border-slate-800/70 last:border-0">
+    <div className="flex items-start justify-between gap-3 py-1.5 border-b border-slate-800/70 last:border-0">
       <span className="min-w-0 flex-1 text-sm text-slate-400 leading-snug">{label}</span>
-      <span className="shrink-0 whitespace-nowrap text-right text-sm font-mono text-slate-200">{value}</span>
+      <span className="max-w-[60%] shrink-0 text-right text-sm font-mono text-slate-200 leading-snug">{value}</span>
     </div>
   )
+}
+
+function formatExtremeShifts(shifts: Day[]): string {
+  if (!shifts.length) return '—'
+  const hours = fmtHours(shifts[0].durationHours ?? null)
+  const dates = shifts.map(d => formatDateShort(d.date)).join(', ')
+  return `${hours} (${dates})`
 }
 
 export function StatsSection({ stats }: StatsSectionProps) {
@@ -24,12 +31,12 @@ export function StatsSection({ stats }: StatsSectionProps) {
         <StatRow label="Número de turnos" value={String(stats.shiftsCount)} />
         <StatRow label="Promedio por turno" value={fmtHours(stats.avgShiftHours)} />
         <StatRow
-          label="Turno más largo"
-          value={stats.longestShift ? `${fmtHours(stats.longestShift.durationHours ?? null)} (${formatDateShort(stats.longestShift.date)})` : '—'}
+          label={stats.longestShifts.length > 1 ? 'Turnos más largos' : 'Turno más largo'}
+          value={formatExtremeShifts(stats.longestShifts)}
         />
         <StatRow
-          label="Turno más corto"
-          value={stats.shortestShift ? `${fmtHours(stats.shortestShift.durationHours ?? null)} (${formatDateShort(stats.shortestShift.date)})` : '—'}
+          label={stats.shortestShifts.length > 1 ? 'Turnos más cortos' : 'Turno más corto'}
+          value={formatExtremeShifts(stats.shortestShifts)}
         />
 
         <h3 className="text-xs font-semibold text-sky-400 uppercase tracking-wide mb-1 mt-4">Descanso</h3>

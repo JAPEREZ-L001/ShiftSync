@@ -8,12 +8,20 @@ export function computeMonthStats(monthEntry: MonthEntry): MonthStats {
   const shiftsCount = worked.length
   const avgShiftHours = shiftsCount ? totalWorkedHours / shiftsCount : null
 
-  let longestShift: Day | null = null
-  let shortestShift: Day | null = null
+  let maxHours = -Infinity
+  let minHours = Infinity
   for (const d of worked) {
-    if (!longestShift || (d.durationHours ?? 0) > (longestShift.durationHours ?? 0)) longestShift = d
-    if (!shortestShift || (d.durationHours ?? 0) < (shortestShift.durationHours ?? 0)) shortestShift = d
+    const hours = d.durationHours ?? 0
+    if (hours > maxHours) maxHours = hours
+    if (hours < minHours) minHours = hours
   }
+
+  const longestShifts = Number.isFinite(maxHours)
+    ? worked.filter(d => (d.durationHours ?? 0) === maxHours)
+    : []
+  const shortestShifts = Number.isFinite(minHours)
+    ? worked.filter(d => (d.durationHours ?? 0) === minHours)
+    : []
 
   const restDaysCount = days.filter(d => d.type === 'descanso').length
   const vacationDaysCount = days.filter(d => d.type === 'vacaciones').length
@@ -27,7 +35,7 @@ export function computeMonthStats(monthEntry: MonthEntry): MonthStats {
   }
 
   return {
-    totalWorkedHours, shiftsCount, avgShiftHours, longestShift, shortestShift,
+    totalWorkedHours, shiftsCount, avgShiftHours, longestShifts, shortestShifts,
     restDaysCount, vacationDaysCount, unknownDaysCount, longestStreak
   }
 }

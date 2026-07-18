@@ -58,8 +58,8 @@ export interface MonthStats {
   totalWorkedHours: number
   shiftsCount: number
   avgShiftHours: number | null
-  longestShift: Day | null
-  shortestShift: Day | null
+  longestShifts: Day[]
+  shortestShifts: Day[]
   restDaysCount: number
   vacationDaysCount: number
   unknownDaysCount: number
