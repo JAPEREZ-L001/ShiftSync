@@ -3,7 +3,6 @@ import type { StatusType, StatusMeta } from '../types'
 export const REST_VALUE = 'Libre'
 export const TARGET_EMPLOYEE = 'PEREZ LOPEZ JOSUE ADONAI'
 export const WATCHED_COWORKERS = ['DUEÑAS MEJIA CARLOS ANTONIO', 'OCHOA VASQUEZ LUIS GERARDO']
-export const SLEEP_HOURS_TARGET = 8
 export const SHIFT_PATTERN = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/
 
 export const WEEKDAY_FULL = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']

@@ -64,10 +64,6 @@ export interface MonthStats {
   vacationDaysCount: number
   unknownDaysCount: number
   longestStreak: number
-  sleepGaps: number[]
-  avgSleepGap: number | null
-  daysBelowTarget: number
-  daysAtOrAboveTarget: number
 }
 
 export interface CoworkerMatch {

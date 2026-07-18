@@ -1,5 +1,4 @@
 import type { Day, MonthEntry, MonthStats, CoworkerMatchResult } from '../types'
-import { SLEEP_HOURS_TARGET } from './constants'
 import { toKey, stripTime, normalize } from './utils'
 
 export function computeMonthStats(monthEntry: MonthEntry): MonthStats {
@@ -27,23 +26,9 @@ export function computeMonthStats(monthEntry: MonthEntry): MonthStats {
     else currentStreak = 0
   }
 
-  const sleepGaps: number[] = []
-  for (let i = 1; i < worked.length; i++) {
-    const prev = worked[i - 1]
-    const curr = worked[i]
-    if (prev.endDateTime && curr.startDateTime) {
-      const gapHours = (curr.startDateTime.getTime() - prev.endDateTime.getTime()) / 3600000
-      sleepGaps.push(gapHours)
-    }
-  }
-  const avgSleepGap = sleepGaps.length ? sleepGaps.reduce((a, b) => a + b, 0) / sleepGaps.length : null
-  const daysBelowTarget = sleepGaps.filter(g => g < SLEEP_HOURS_TARGET).length
-  const daysAtOrAboveTarget = sleepGaps.filter(g => g >= SLEEP_HOURS_TARGET).length
-
   return {
     totalWorkedHours, shiftsCount, avgShiftHours, longestShift, shortestShift,
-    restDaysCount, vacationDaysCount, unknownDaysCount, longestStreak,
-    sleepGaps, avgSleepGap, daysBelowTarget, daysAtOrAboveTarget
+    restDaysCount, vacationDaysCount, unknownDaysCount, longestStreak
   }
 }
 

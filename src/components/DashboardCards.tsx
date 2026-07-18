@@ -18,7 +18,7 @@ function DashboardCard({ label, value, sub }: { label: string; value: string; su
 
 export function DashboardCards({ stats, nextShift }: DashboardCardsProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <DashboardCard label="Horas trabajadas" value={fmtHours(stats.totalWorkedHours)} sub="este mes" />
       <DashboardCard label="Promedio por turno" value={fmtHours(stats.avgShiftHours)} sub="este mes" />
       <DashboardCard label="Días libres" value={String(stats.restDaysCount)} sub="este mes" />
@@ -27,7 +27,6 @@ export function DashboardCards({ stats, nextShift }: DashboardCardsProps) {
         value={nextShift ? formatDateShort(nextShift.date) : '—'}
         sub={nextShift ? nextShift.raw : 'sin datos'}
       />
-      <DashboardCard label="Horas p/ dormir" value={fmtHours(stats.avgSleepGap)} sub="promedio este mes" />
     </div>
   )
 }

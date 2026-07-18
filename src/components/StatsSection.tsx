@@ -1,6 +1,5 @@
 import type { MonthStats } from '../types'
 import { fmtHours, formatDateShort } from '../lib/utils'
-import { SLEEP_HOURS_TARGET } from '../lib/constants'
 
 interface StatsSectionProps {
   stats: MonthStats
@@ -37,27 +36,6 @@ export function StatsSection({ stats }: StatsSectionProps) {
         <StatRow label="Días libres" value={String(stats.restDaysCount)} />
         <StatRow label="Vacaciones" value={String(stats.vacationDaysCount)} />
         <StatRow label="Días consecutivos trabajados (máx.)" value={String(stats.longestStreak)} />
-
-        <h3 className="text-xs font-semibold text-amber-300 uppercase tracking-wide mb-1 mt-4">
-          Sueño (meta: {SLEEP_HOURS_TARGET}h/día)
-        </h3>
-        <StatRow label="Promedio disponible entre turnos" value={fmtHours(stats.avgSleepGap)} />
-        <StatRow
-          label={`Días con menos de ${SLEEP_HOURS_TARGET}h`}
-          value={stats.sleepGaps.length ? String(stats.daysBelowTarget) : '—'}
-        />
-        <StatRow
-          label={`Días con ${SLEEP_HOURS_TARGET}h o más`}
-          value={stats.sleepGaps.length ? String(stats.daysAtOrAboveTarget) : '—'}
-        />
-        {!stats.sleepGaps.length && (
-          <p className="text-xs text-slate-500 mt-1">
-            No hay suficientes turnos consecutivos este mes para calcular huecos de sueño.
-          </p>
-        )}
-        <p className="text-xs text-slate-500 mt-2">
-          El primer turno del mes no tiene un turno anterior dentro del mismo mes, así que ese hueco no se cuenta.
-        </p>
       </div>
     </div>
   )
